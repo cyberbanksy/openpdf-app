@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OpenPDF</string>
+    <string name="title_activity_main">OpenPDF</string>
+    <string name="package_name">com.openpdf.app</string>
+    <string name="custom_url_scheme">com.openpdf.app</string>
+</resources>

@@ -1,105 +1,87 @@
-# OpenPDF — Cross-Platform Strategy
+# OpenPDF — Cross-Platform (Native Builds)
 
-Target platforms: **iOS/iPadOS, Android (Google Play), Google TV, Apple TV, Meta Quest, and OpenXR.**
+Target platforms: **iOS/iPadOS, Android (Google Play), Google TV, Apple TV, and Meta Quest.**
 
-## Chosen architecture: one web core, many shells
+## Architecture: one web core, native shells
 
-OpenPDF is a single React/Vite web app. Every platform is reached by wrapping or
-presenting that same `dist/` build, rather than maintaining separate native codebases.
-This maximises reuse of the UI and keeps behaviour identical everywhere.
+OpenPDF is a single React/Vite web app. Every platform ships as a **native app** that
+hosts that same `dist/` build in a system web view via [Capacitor](https://capacitorjs.com)
+— no per-platform UI rewrite.
 
 ```
-                         ┌─────────────────────────────┐
-                         │   React + Vite web core      │
-                         │   (src/app/App.tsx, dist/)   │
-                         └──────────────┬──────────────┘
-             ┌──────────────┬───────────┼───────────┬──────────────┐
-             ▼              ▼            ▼           ▼              ▼
-        Capacitor       Capacitor    PWA install  WebXR      SwiftUI+WKWebView
-        iOS shell     Android shell  (browser)   session        tvOS shell
-             │              │            │           │              │
-          iOS/iPad   Android + Google  Desktop/    Meta Quest    Apple TV
-                      TV (leanback)    Quest Br.   / OpenXR
+                    ┌─────────────────────────────┐
+                    │   React + Vite web core      │
+                    │   (src/app/App.tsx → dist/)  │
+                    └──────────────┬──────────────┘
+          ┌───────────────┬────────┴────────┬───────────────┐
+          ▼               ▼                 ▼               ▼
+     Capacitor iOS   Capacitor Android   Capacitor      SwiftUI + WKWebView
+      (WKWebView)    (Android WebView)   Android         (tvOS)
+          │               │                 │               │
+     iOS / iPadOS   Android + Google TV   Meta Quest      Apple TV
+                    (one AAB/APK)         (sideload APK)
 ```
 
-> **Why this over React Native or Unity?** A flat, scroll-based document reader reuses
-> ~100% of its logic as web. RN would mean rewriting the UI for marginal native gains;
-> Unity would only pay off if we commit to a *true immersive 3D* reading environment
-> (see "Immersive XR" below). If that becomes the goal, Unity/Unreal is the path — this
-> web core still stands as the 2D/companion experience.
+The **Android build is one artifact** that covers three targets: Google Play phones/tablets,
+Google TV (leanback), and Meta Quest (which runs Android — the APK sideloads as a 2D app).
 
----
+> **Why not WebXR?** Per direction, OpenPDF ships as native apps only — no WebXR. On Meta
+> Quest that means the native Android APK running as a 2D panel app, not an immersive
+> WebXR scene.
 
 ## Status by platform
 
-| Platform            | Mechanism                          | Status |
-|---------------------|------------------------------------|--------|
-| Desktop / any browser | PWA (installable)                | ✅ Working |
-| Meta Quest          | PWA in Quest Browser (WebXR-capable) | ✅ Installs & runs (2D); ⏳ "Enter VR" panel pending |
-| OpenXR              | via WebXR (Quest Browser / PC WebXR) | ⏳ Pending immersive session |
-| iOS / iPadOS        | Capacitor (WKWebView)              | 🟡 Configured; needs `cap add ios` on a Mac w/ Xcode |
-| Android             | Capacitor (AAB/APK)                | 🟡 Configured; needs `cap add android` w/ Android Studio |
-| Google TV           | Same Android APK + leanback/D-pad  | 🟡 Android shell + ✅ D-pad nav; ⏳ leanback manifest |
-| Apple TV (tvOS)     | SwiftUI + WKWebView shell          | ⏳ Not started (no official Capacitor tvOS) |
+| Platform          | Native shell                       | Status |
+|-------------------|------------------------------------|--------|
+| Android           | Capacitor Android (AAB/APK)        | ✅ Project generated + debug APK built |
+| Google TV         | Same Android APK + leanback        | ✅ Leanback launcher + banner added; D-pad nav works |
+| Meta Quest        | Same Android APK (2D panel)        | ✅ Installs via sideload / App Lab |
+| iOS / iPadOS      | Capacitor iOS (Xcode project)      | 🟡 Project generated; needs signing team to archive |
+| Apple TV (tvOS)   | SwiftUI + WKWebView shell          | ⏳ Scaffold in `tvos/` — see below |
 
-✅ done · 🟡 groundwork laid · ⏳ planned
+## Build commands
 
----
-
-## What's implemented now (Phase 1)
-
-- **Installable PWA** — `vite-plugin-pwa` generates `manifest.webmanifest`, a service
-  worker (offline precache), and maskable icons. This alone makes OpenPDF installable on
-  desktop, Android, iOS Safari, and **the Meta Quest Browser**.
-- **D-pad / remote / controller navigation** — arrow keys, PageUp/Down, Space, Home/End
-  drive page navigation (`App.tsx`). This is the baseline input model for Google TV,
-  Apple TV, and Quest controllers.
-- **Capacitor configuration** — `capacitor.config.ts` + npm scripts, pointing at `dist/`.
-  Ready to generate native iOS/Android projects.
-
-## Next steps by track
-
-### Native mobile (iOS + Android) — Capacitor
-On a machine with Xcode and/or Android Studio:
 ```bash
-npm run build
-npm run cap:add:ios       # -> ./ios      (needs Xcode + CocoaPods)
-npm run cap:add:android   # -> ./android  (needs Android Studio + JDK 17)
-npm run cap:sync
-npm run cap:open:ios      # archive & upload to App Store Connect
-npm run cap:open:android  # build AAB -> Google Play
-```
-The generated `ios/` and `android/` folders are git-ignored (regenerated per machine).
+npm run build            # produce dist/ (the web core all shells load)
 
-### Google TV
-- The Android AAB already installs on Google TV.
-- Add TV support to the generated `android/` manifest: `<category android:name="android.intent.category.LEANBACK_LAUNCHER"/>`, a TV banner asset, and `<uses-feature android:name="android.software.leanback" android:required="false"/>`.
-- D-pad page nav already works; remaining: **focus rings + spatial navigation** for the
-  toolbar/controls so every control is reachable by remote (see "Focus model").
+# Android / Google TV / Quest
+npx cap sync android
+cd android && ./gradlew assembleDebug      # -> android/app/build/outputs/apk/debug/app-debug.apk
+# release: ./gradlew bundleRelease          # -> .aab for Google Play
+
+# iOS / iPadOS
+npx cap sync ios
+npm run cap:open:ios     # open in Xcode, set a signing Team, then Archive
+```
+
+Convenience scripts in `package.json`: `cap:add:ios`, `cap:add:android`, `cap:sync`,
+`cap:open:ios`, `cap:open:android`.
+
+## Per-platform notes
+
+### Android · Google TV · Meta Quest
+- One `android/` project. `AndroidManifest.xml` declares `LEANBACK_LAUNCHER` and
+  `android.software.leanback` (`required=false`) so the same APK is a phone app, a Google
+  TV app, and a Quest 2D app.
+- D-pad / remote / controller paging already works (handled in the web core).
+- **Quest:** sideload the APK (`adb install`) or publish via the Meta Store / App Lab.
+- **Store banner:** a 320×180 TV banner is referenced for the leanback launcher.
+
+### iOS / iPadOS
+- `ios/` is a standard Capacitor Xcode project. To ship: open in Xcode, select a
+  development Team under *Signing & Capabilities*, then Archive → App Store Connect.
 
 ### Apple TV (tvOS)
-- No official Capacitor tvOS platform. Ship a thin **SwiftUI app hosting a `WKWebView`**
-  that loads the bundled `dist/` (or a hosted URL), forwarding Siri-Remote swipes/clicks
-  to the same keyboard events the web core already handles.
+- Capacitor has no official tvOS target, so tvOS uses a thin **SwiftUI app hosting a
+  `WKWebView`** that loads the bundled `dist/`. The Siri Remote's swipe/select maps to the
+  same arrow-key / Enter events the web core already handles. (Scaffold pending in `tvos/`.)
 
-### Meta Quest / OpenXR — immersive panel
-- **Today:** installs as a PWA and runs as a flat window in the Quest Browser.
-- **Next (2D panel, recommended):** add an "Enter VR" affordance using the **WebXR Device
-  API** (`navigator.xr.requestSession('immersive-vr')`). Render the reader onto a curved
-  WebGL quad (three.js) floating in space — the reader stays the same DOM, captured to a
-  texture, or re-rendered as an `HTMLMesh`. WebXR runs on the device's **OpenXR** runtime,
-  so this covers both "Meta Quest" and "OpenXR" from one implementation.
-- **Later (true immersive):** a volumetric multi-document environment — this is where a
-  native OpenXR engine (Unity/Unreal) would be evaluated as a separate track.
-
-### Focus model (shared by all TV / XR targets)
-The current UI uses non-focusable `<div>`s with hover styling. For full remote/controller
-operability of *controls* (not just paging), convert interactive elements to focusable
-buttons with visible `:focus-visible` rings and add roving-tabindex spatial navigation.
-
----
+### Focus model (TV + Quest)
+Paging by remote/controller works today. Making every *control* (toolbar pills, bottom
+controls) reachable by D-pad needs focusable elements with visible `:focus-visible` rings
+and roving-tabindex spatial navigation — tracked as a follow-up.
 
 ## App identity
-- **App ID:** `com.openpdf.app`  ·  **Name:** OpenPDF
+- **App ID:** `com.openpdf.app` · **Name:** OpenPDF
 - **Icons:** `public/icon.svg` + rasterised `icon-192/512/512-maskable/apple-touch-icon`
 - **Theme:** `#0d0c0a` background, `#c8a870` amber accent

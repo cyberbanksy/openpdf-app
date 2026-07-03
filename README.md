@@ -17,10 +17,10 @@ The interface reimagines a document reader for focused, distraction-free reading
 
 ## Cross-platform
 
-OpenPDF is built as **one web core, wrapped for every target** — iOS, Android, Google TV,
-Apple TV, Meta Quest, and OpenXR. It's an installable **PWA** today (works in the Meta
-Quest Browser, on desktop, and on mobile home screens), with **Capacitor** shells for
-native iOS/Android/Google TV and **WebXR** for immersive presentation on Quest/OpenXR.
+OpenPDF is built as **one web core, wrapped into native apps** for every target — iOS,
+Android, Google TV, Apple TV, and Meta Quest — using [Capacitor](https://capacitorjs.com).
+The Android build is a single artifact that ships to Google Play, installs on Google TV,
+and sideloads onto Meta Quest as a 2D app. (It's also an installable PWA for the browser.)
 
 See **[PLATFORMS.md](PLATFORMS.md)** for the full architecture, per-platform status, and
 build steps. Reading is fully operable by keyboard / TV remote / controller (arrow keys,
@@ -30,8 +30,8 @@ Page Up/Down, Space, Home/End).
 
 - [React 18](https://react.dev) + [Vite 6](https://vite.dev)
 - [Tailwind CSS v4](https://tailwindcss.com) (`@tailwindcss/vite`)
-- [vite-plugin-pwa](https://vite-pwa-org.netlify.app) — installable / offline PWA
-- [Capacitor](https://capacitorjs.com) — native iOS / Android / TV shells
+- [Capacitor](https://capacitorjs.com) — native iOS / Android / Google TV / Quest shells
+- [vite-plugin-pwa](https://vite-pwa-org.netlify.app) — installable / offline web build
 - [lucide-react](https://lucide.dev) icons
 - Barlow / Barlow Condensed / DM Mono (Google Fonts, via `index.html`)
 

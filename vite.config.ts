@@ -4,10 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// Installable-PWA build. This is what makes OpenPDF installable across platforms:
-// desktop/Android/iOS home-screen, and — crucially — the Meta Quest Browser, which
-// runs WebXR on top of an OpenXR runtime. Capacitor (see capacitor.config.ts) reuses
-// this same `dist/` output to produce native iOS / Android / Google TV shells.
+// Web build (also an installable PWA for the browser/desktop target). Capacitor
+// (see capacitor.config.ts) reuses this same `dist/` output to produce the native
+// iOS / Android / Google TV / Meta Quest shells.
 export default defineConfig({
   plugins: [
     react(),

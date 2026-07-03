@@ -477,39 +477,38 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [currentPage, scrollToPage]);
 
-  // Double-tap zoom — cursor-anchored, synchronous DOM commit via flushSync
+  // Double-tap zoom — anchored to the exact point clicked. Record where the cursor
+  // sits inside the clicked page as a fraction of that page's box; then, after the
+  // width change is committed, nudge the scroll so that same point lands back under
+  // the cursor. Reading the real rendered geometry (getBoundingClientRect) keeps it
+  // correct regardless of flex centering or the current scroll position.
   const handleDocDoubleClick = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("[data-figure]")) return;
-    const el     = scrollRef.current!;
-    const rect   = el.getBoundingClientRect();
-    const vw     = rect.width;
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const el = scrollRef.current;
+    if (!el) return;
 
-    // Snapshot current layout BEFORE any state change
-    const preScrollLeft = el.scrollLeft;
-    const preScrollTop  = el.scrollTop;
-    const prePageW      = pageWidth;                               // current rendered width
-    const preCenterOff  = Math.max(0, (vw - prePageW) / 2);      // flex centering offset
+    const pageEl =
+      ((e.target as HTMLElement).closest("[data-page]") as HTMLElement | null) ??
+      pageRefs.current[currentPage - 1] ??
+      null;
+    if (!pageEl) { setZoomedIn(v => !v); return; }
 
-    // Cursor position in page-content space (pre-zoom)
-    const pageX = preScrollLeft + mouseX - preCenterOff;
-    const pageY = preScrollTop  + mouseY;
+    const preRect = pageEl.getBoundingClientRect();
+    const fx = (e.clientX - preRect.left) / preRect.width;   // 0..1 across the page
+    const fy = (e.clientY - preRect.top)  / preRect.height;  // 0..1 down the page
 
-    const going = !zoomedIn;
+    // flushSync commits the new page width synchronously so we can immediately
+    // measure where the clicked point ended up.
+    flushSync(() => setZoomedIn(v => !v));
 
-    // flushSync forces React to commit the new pageWidth to the DOM synchronously
-    // so we can immediately read the new layout and set scroll correctly.
-    flushSync(() => setZoomedIn(going));
+    const postRect = pageEl.getBoundingClientRect();
+    const targetX  = postRect.left + fx * postRect.width;
+    const targetY  = postRect.top  + fy * postRect.height;
 
-    const postPageW     = going ? basePageW * ZOOM_FACTOR : basePageW;
-    const postCenterOff = Math.max(0, (vw - postPageW) / 2);
-    const factor        = going ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
-
-    // Scroll so the same page-content point stays under the cursor
-    el.scrollLeft = Math.max(0, pageX * factor + postCenterOff - mouseX);
-    el.scrollTop  = Math.max(0, pageY * factor - mouseY);
-  }, [zoomedIn, pageWidth, basePageW]);
+    // Shift scroll by exactly how far the clicked point moved from the cursor.
+    el.scrollLeft = Math.max(0, el.scrollLeft + (targetX - e.clientX));
+    el.scrollTop  = Math.max(0, el.scrollTop  + (targetY - e.clientY));
+  }, [currentPage]);
 
   // Hold + drag scrub
   const holdTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -689,8 +688,11 @@ export default function App() {
           style={{
             flex:1, overflowY:"auto", overflowX: zoomedIn ? "auto" : "hidden",
             background:surroundBg, transition:"background 0.4s ease",
-            display:"flex", flexDirection:"column", alignItems:"center", gap:`${PAGE_GAP}px`,
-            padding:0,
+            // Block layout (not flex `align-items:center`): pages are centered with
+            // `margin:0 auto` on each wrapper below. Auto margins center a page while it
+            // fits and collapse to 0 once it overflows — keeping the whole zoomed page
+            // scrollable, so a click anywhere (incl. the left edge) can stay anchored.
+            display:"block", padding:0,
             position:"relative", cursor: scrubbing ? "ns-resize" : (zoomedIn ? "zoom-out" : "zoom-in"),
           }}
         >
@@ -699,7 +701,7 @@ export default function App() {
               key={p}
               ref={el => { pageRefs.current[p-1] = el; }}
               data-page={String(p)}
-              style={{ position:"relative", flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center" }}
+              style={{ position:"relative", width:`${pageWidth}px`, margin:"0 auto" }}
             >
               <DocumentPage
                 page={p} widthPx={pageWidth} appeared={appearedSet.has(p)}
