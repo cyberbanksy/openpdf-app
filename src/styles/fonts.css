@@ -1,1 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+/*
+ * Fonts (Barlow, Barlow Condensed, DM Mono) are loaded via a <link> in index.html
+ * rather than a CSS @import. A bundled remote `@import url(...)` is fragile — it must
+ * remain the first rule in the stylesheet and can be dropped by CSS bundlers — so the
+ * <link> in the document head is the reliable primary loader.
+ */

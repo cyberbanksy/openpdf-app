@@ -455,6 +455,28 @@ export default function App() {
     setTimeout(() => pageRefs.current[p-1]?.scrollIntoView({ behavior:"smooth", block:"start" }), 50);
   }, []);
 
+  // Keyboard / D-pad navigation — makes the reader operable by remote on
+  // Google TV & Apple TV, by controller on Meta Quest, and by keyboard on desktop.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "ArrowRight": case "ArrowDown": case "PageDown":
+          e.preventDefault(); scrollToPage(Math.min(TOTAL_PAGES, currentPage + 1)); break;
+        case "ArrowLeft": case "ArrowUp": case "PageUp":
+          e.preventDefault(); scrollToPage(Math.max(1, currentPage - 1)); break;
+        case " ": {
+          e.preventDefault();
+          scrollToPage(e.shiftKey ? Math.max(1, currentPage - 1) : Math.min(TOTAL_PAGES, currentPage + 1));
+          break;
+        }
+        case "Home": e.preventDefault(); scrollToPage(1); break;
+        case "End":  e.preventDefault(); scrollToPage(TOTAL_PAGES); break;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [currentPage, scrollToPage]);
+
   // Double-tap zoom — cursor-anchored, synchronous DOM commit via flushSync
   const handleDocDoubleClick = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("[data-figure]")) return;

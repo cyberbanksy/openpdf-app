@@ -15,12 +15,25 @@ The interface reimagines a document reader for focused, distraction-free reading
 - **Voice-search affordance** (visual stub)
 - A warm amber accent on a deep neutral canvas — deliberately no "AI blue"
 
+## Cross-platform
+
+OpenPDF is built as **one web core, wrapped for every target** — iOS, Android, Google TV,
+Apple TV, Meta Quest, and OpenXR. It's an installable **PWA** today (works in the Meta
+Quest Browser, on desktop, and on mobile home screens), with **Capacitor** shells for
+native iOS/Android/Google TV and **WebXR** for immersive presentation on Quest/OpenXR.
+
+See **[PLATFORMS.md](PLATFORMS.md)** for the full architecture, per-platform status, and
+build steps. Reading is fully operable by keyboard / TV remote / controller (arrow keys,
+Page Up/Down, Space, Home/End).
+
 ## Tech stack
 
 - [React 18](https://react.dev) + [Vite 6](https://vite.dev)
 - [Tailwind CSS v4](https://tailwindcss.com) (`@tailwindcss/vite`)
+- [vite-plugin-pwa](https://vite-pwa-org.netlify.app) — installable / offline PWA
+- [Capacitor](https://capacitorjs.com) — native iOS / Android / TV shells
 - [lucide-react](https://lucide.dev) icons
-- Barlow / Barlow Condensed / DM Mono (Google Fonts)
+- Barlow / Barlow Condensed / DM Mono (Google Fonts, via `index.html`)
 
 The entire experience lives in [`src/app/App.tsx`](src/app/App.tsx) and is driven by inline
 styles, so it has no runtime UI-library dependency beyond the icon set.

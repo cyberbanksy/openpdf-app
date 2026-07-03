@@ -1,0 +1,9 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OpenPDF">
+  <rect width="512" height="512" fill="#0d0c0a"/>
+  <rect x="146" y="104" width="220" height="304" rx="18" fill="#131210" stroke="#c8a870" stroke-width="11"/>
+  <path d="M300 104 H348 a18 18 0 0 1 18 18 V170 Z" fill="#c8a870" opacity="0.92"/>
+  <rect x="182" y="214" width="112" height="14" rx="7" fill="#c8a870" opacity="0.9"/>
+  <rect x="182" y="248" width="148" height="14" rx="7" fill="#ddd8d0" opacity="0.32"/>
+  <rect x="182" y="282" width="108" height="14" rx="7" fill="#ddd8d0" opacity="0.32"/>
+  <rect x="182" y="316" width="140" height="14" rx="7" fill="#ddd8d0" opacity="0.32"/>
+</svg>
